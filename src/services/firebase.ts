@@ -5,6 +5,7 @@ import { initializeAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 const reactNativePersistence = (firebaseAuth as any).getReactNativePersistence;
 
+
 import {
   FIREBASE_API_KEY,
   FIREBASE_APP_ID,

@@ -1,5 +1,5 @@
-import React from 'react';
-import { Text, TextInput, TextInputProps, View } from 'react-native';
+import React from "react";
+import { Text, TextInput, TextInputProps, View } from "react-native";
 
 interface FormInputProps extends TextInputProps {
   label?: string;
@@ -15,7 +15,14 @@ export const FormInput: React.FC<FormInputProps> = ({
   return (
     <View>
       {label && (
-        <Text style={{ fontSize: 14, fontWeight: '600', marginBottom: 6, color: '#333' }}>
+        <Text
+          style={{
+            fontSize: 14,
+            fontWeight: "600",
+            marginBottom: 6,
+            color: "#333",
+          }}
+        >
           {label}
         </Text>
       )}
@@ -23,11 +30,11 @@ export const FormInput: React.FC<FormInputProps> = ({
         style={[
           {
             borderWidth: 1,
-            borderColor: error ? '#f44336' : '#ddd',
+            borderColor: error ? "#f44336" : "#ddd",
             padding: 15,
             borderRadius: 8,
             fontSize: 16,
-            backgroundColor: '#fff',
+            backgroundColor: "#fff",
           },
           style,
         ]}
@@ -35,7 +42,7 @@ export const FormInput: React.FC<FormInputProps> = ({
         {...props}
       />
       {error && (
-        <Text style={{ fontSize: 12, color: '#f44336', marginTop: 4 }}>
+        <Text style={{ fontSize: 12, color: "#f44336", marginTop: 4 }}>
           {error}
         </Text>
       )}
