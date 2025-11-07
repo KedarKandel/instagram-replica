@@ -1,12 +1,11 @@
 import { Link } from "expo-router";
-
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 export default function WelcomeScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Instagram Clone</Text>
-      <Text style={styles.subtitle}>Welcome to the app</Text>
+      <Text style={styles.title}>Instagram</Text>
+      <Text style={styles.subtitle}>Welcome to your community</Text>
 
       <View style={styles.buttonContainer}>
         <Link href="/(authScreens)/sign-in" asChild>
@@ -23,6 +22,8 @@ export default function WelcomeScreen() {
           </Pressable>
         </Link>
       </View>
+
+      <Text style={styles.footerText}>© 2025 Instagram Clone</Text>
     </View>
   );
 }
@@ -30,45 +31,58 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#bf375bff", // Instagram pinkish gradient base color
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
   },
   title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    marginBottom: 10,
+    fontSize: 42,
+    fontWeight: "800",
+    color: "#fff",
+    marginBottom: 8,
+    letterSpacing: -1,
   },
   subtitle: {
     fontSize: 18,
-    color: "#666",
-    marginBottom: 40,
+    color: "#fff",
+    opacity: 0.9,
+    marginBottom: 50,
   },
   buttonContainer: {
-    width: "100%",
-    gap: 12,
+    width: "80%",
+    gap: 14,
   },
   button: {
-    backgroundColor: "#0095f6",
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: "#fff",
+    paddingVertical: 16,
+    borderRadius: 30,
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 6,
+    elevation: 5,
   },
   outlineButton: {
-    backgroundColor: "transparent",
-    padding: 16,
-    borderWidth: 1,
-    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: "#fff",
+    paddingVertical: 16,
+    borderRadius: 30,
     alignItems: "center",
-    borderColor: "#0095f6",
   },
   buttonText: {
-    color: "white",
-    fontWeight: "600",
     fontSize: 16,
+    fontWeight: "600",
   },
   outlineButtonText: {
-    color: "#0095f6",
+    color: "#fff",
+  },
+  footerText: {
+    position: "absolute",
+    bottom: 40,
+    color: "#fff",
+    opacity: 0.7,
+    fontSize: 13,
   },
 });

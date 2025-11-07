@@ -16,7 +16,7 @@ export const postService = {
    async createPost(postData: CreatePostData, user: AuthUser): Promise<void> {
     try {
       
-      // Validate required fields from your AuthUser
+      // Validate required fields from the AuthUser
       if (!user.uid) {
         throw new Error('User UID is undefined');
       }
@@ -29,7 +29,7 @@ export const postService = {
         throw new Error('Image URL is required');
       }
 
-      // Create the post payload using your AuthUser properties
+      // Create the post payload using AuthUser properties
       const postPayload = {
         userId: user.uid,
         username: user.name,
@@ -91,7 +91,7 @@ export const postService = {
       //const postDoc = await getDocs(postRef);
       
       // For simplicity, we'll implement this in the component
-      // You can expand this later
+      
     } catch (error) {
       console.error('Error toggling like:', error);
       throw new Error('Failed to toggle like');
@@ -104,7 +104,7 @@ export const postService = {
       const postRef = doc(db, 'posts', postId);
       //const postDoc = await getDocs(postRef);
       
-      // For simplicity, we'll implement this in the component
+      // For simplicity, we'll implement later
     } catch (error) {
       console.error('Error adding comment:', error);
       throw new Error('Failed to add comment');

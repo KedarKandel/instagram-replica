@@ -109,7 +109,7 @@ export default function SignInScreen() {
           onPress={handleSignIn}
           disabled={isLoading}
           style={{
-            backgroundColor: isLoading ? "#ccc" : "#0095f6",
+            backgroundColor: isLoading ? "#ccc" : "#1f91d3ff",
             padding: 15,
             borderRadius: 8,
             alignItems: "center",
@@ -122,9 +122,10 @@ export default function SignInScreen() {
       </View>
       <Link href="/(authScreens)/sign-up" asChild>
         <TouchableOpacity style={{ marginTop: 15, alignItems: "center" }}>
-          <Text style={{ color: "#0095f6" }}>
-            Don't have an account? Sign Up
-          </Text>
+          <View style={{ flexDirection: "row", gap: 6 }}>
+            <Text>Don't have an account?</Text>
+            <Text style={{ color: "#0095f6", fontWeight: "600" }}>Sign Up</Text>
+          </View>
         </TouchableOpacity>
       </Link>
     </View>

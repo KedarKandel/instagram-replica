@@ -1,4 +1,5 @@
 // app/(tabs)/feed.tsx
+import { PostCard } from '@/src/components/PostCard';
 import { useAuth } from '@/src/hooks/useAuth';
 import { postService } from '@/src/services/postService';
 import { Post } from '@/src/types/posts';
@@ -6,24 +7,24 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
-  Image,
+  RefreshControl,
   Text,
-  TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
-
 
 export default function FeedScreen() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [activeCommentPost, setActiveCommentPost] = useState<string | null>(null);
   
   const { user } = useAuth();
   const { refresh } = useLocalSearchParams();
+
   useEffect(() => {
     loadPosts();
   }, [refresh]);
@@ -36,10 +37,16 @@ export default function FeedScreen() {
       Alert.alert('Error', 'Failed to load posts');
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
-  const handleLike = async (postId: string) => {
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    loadPosts();
+  };
+
+  const handleLike = (postId: string) => {
     if (!user) return;
 
     setPosts(prevPosts => 
@@ -49,7 +56,7 @@ export default function FeedScreen() {
           return {
             ...post,
             likes: isLiked 
-              ? post.likes.filter((id:string) => id !== user.uid)
+              ? post.likes.filter(id => id !== user.uid)
               : [...post.likes, user.uid]
           };
         }
@@ -58,14 +65,14 @@ export default function FeedScreen() {
     );
   };
 
-  const handleAddComment = async (postId: string) => {
-    if (!commentText.trim() || !user) return;
+  const handleAddComment = (postId: string, text: string) => {
+    if (!text.trim() || !user) return;
 
     const newComment = {
       id: Date.now().toString(),
       userId: user.uid,
-      username: user.name,
-      text: commentText,
+      username: user.name || 'User',
+      text: text,
       createdAt: new Date(),
     };
 
@@ -85,101 +92,16 @@ export default function FeedScreen() {
     setActiveCommentPost(null);
   };
 
-  const renderPost = ({ item }: { item: Post }) => (
-    <View style={{ backgroundColor: 'white', marginBottom: 16, borderBottomWidth: 1, borderBottomColor: '#e5e5e5' }}>
-      {/* Post Header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', padding: 12 }}>
-        <Image 
-          source={{ uri: item.userAvatar || 'https://via.placeholder.com/40' }} 
-          style={{ width: 32, height: 32, borderRadius: 16, marginRight: 8 }} 
-        />
-        <View>
-          <Text style={{ fontWeight: '600' }}>{item.username}</Text>
-          {item.location && <Text style={{ fontSize: 12, color: '#666' }}>{item.location}</Text>}
-        </View>
-      </View>
-
-      {/* Post Image */}
-      <Image 
-        source={{ uri: item.imageUrl }} 
-        style={{ width: '100%', height: 300 }} 
-      />
-
-      {/* Post Actions */}
-      <View style={{ padding: 12 }}>
-        <View style={{ flexDirection: 'row', marginBottom: 8 }}>
-          <TouchableOpacity onPress={() => handleLike(item.id)} style={{ marginRight: 16 }}>
-            <Ionicons 
-              name={item.likes.includes(user?.uid || '') ? "heart" : "heart-outline"} 
-              size={24} 
-              color={item.likes.includes(user?.uid || '') ? "red" : "black"} 
-            />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setActiveCommentPost(activeCommentPost === item.id ? null : item.id)}>
-            <Ionicons name="chatbubble-outline" size={24} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Likes */}
-        {item.likes.length > 0 && (
-          <Text style={{ fontWeight: '600', marginBottom: 4 }}>
-            {item.likes.length} {item.likes.length === 1 ? 'like' : 'likes'}
-          </Text>
-        )}
-
-        {/* Caption */}
-        <Text style={{ marginBottom: 4 }}>
-          <Text style={{ fontWeight: '600' }}>{item.username}</Text> {item.caption}
-        </Text>
-
-        {/* Comments */}
-        {item.comments.slice(0, 2).map(comment => (
-          <Text key={comment.id} style={{ marginBottom: 2 }}>
-            <Text style={{ fontWeight: '600' }}>{comment.username}</Text> {comment.text}
-          </Text>
-        ))}
-
-        {item.comments.length > 2 && (
-          <Text style={{ color: '#666', marginBottom: 4 }}>
-            View all {item.comments.length} comments
-          </Text>
-        )}
-
-        {/* Add Comment */}
-        {activeCommentPost === item.id && (
-          <View style={{ flexDirection: 'row', marginTop: 8 }}>
-            <TextInput
-              placeholder="Add a comment..."
-              value={commentText}
-              onChangeText={setCommentText}
-              style={{ 
-                flex: 1, 
-                borderWidth: 1, 
-                borderColor: '#ddd', 
-                borderRadius: 20, 
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                marginRight: 8
-              }}
-            />
-            <TouchableOpacity 
-              onPress={() => handleAddComment(item.id)}
-              disabled={!commentText.trim()}
-            >
-              <Text style={{ color: commentText.trim() ? '#0095f6' : '#ccc', fontWeight: '600' }}>
-                Post
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
-    </View>
-  );
+  const handleToggleComment = (postId: string) => {
+    setActiveCommentPost(activeCommentPost === postId ? null : postId);
+    setCommentText('');
+  };
 
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Loading posts...</Text>
+        <ActivityIndicator size="large" color="#0095f6" />
+        <Text style={{ marginTop: 10, color: '#666' }}>Loading posts...</Text>
       </View>
     );
   }
@@ -188,9 +110,37 @@ export default function FeedScreen() {
     <View style={{ flex: 1, backgroundColor: '#fafafa' }}>
       <FlatList
         data={posts}
-        renderItem={renderPost}
+        renderItem={({ item }) => (
+          <PostCard
+            post={item}
+            onLike={handleLike}
+            onAddComment={handleAddComment}
+            activeCommentPost={activeCommentPost}
+            onToggleComment={handleToggleComment}
+            commentText={commentText}
+            onCommentTextChange={setCommentText}
+          />
+        )}
         keyExtractor={item => item.id}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={['#0095f6']}
+          />
+        }
+        ListEmptyComponent={
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+            <Ionicons name="camera-outline" size={80} color="#ccc" />
+            <Text style={{ fontSize: 18, fontWeight: '600', color: '#666', marginTop: 16 }}>
+              No posts yet
+            </Text>
+            <Text style={{ fontSize: 14, color: '#999', marginTop: 8 }}>
+              Be the first to share a post!
+            </Text>
+          </View>
+        }
       />
     </View>
   );
