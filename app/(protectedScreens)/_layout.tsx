@@ -1,30 +1,41 @@
-import { Stack } from 'expo-router';
+
+import { Ionicons } from '@expo/vector-icons';
+import { router, Stack } from 'expo-router';
+import { TouchableOpacity } from 'react-native';
 
 export default function ProtectedLayout() {
   return (
-    <Stack>
+    <Stack
+      screenOptions={{
+        headerShown: true,
+        headerBackTitle: 'Back',
+        headerLeft: ({ canGoBack }) =>
+          canGoBack ? (
+            <TouchableOpacity 
+              onPress={() => router.back()}
+              style={{ marginLeft: 16 }}
+            >
+              <Ionicons name="arrow-back" size={24} color="#000" />
+            </TouchableOpacity>
+          ) : null,
+      }}
+    >
       <Stack.Screen 
         name="edit-profile" 
         options={{ 
-          headerShown: true,
           title: 'Edit Profile',
-          headerBackTitle: 'Back'
         }} 
       />
       <Stack.Screen 
         name="post-detail" 
         options={{ 
-          headerShown: true,
           title: 'Post',
-          headerBackTitle: 'Back'
         }} 
       />
       <Stack.Screen 
         name="contact" 
         options={{ 
-          headerShown: true,
           title: 'Contact',
-          headerBackTitle: 'Back'
         }} 
       />
     </Stack>
