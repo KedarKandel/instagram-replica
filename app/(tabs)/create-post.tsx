@@ -24,11 +24,17 @@ export default function CreatePostScreen() {
   const { user, isAuthenticated } = useAuth();
 
   const pickImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Permission required", "Please allow photo library access.");
+      return;
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images", "videos"],
+      mediaTypes: ImagePicker.MediaTypeOptions.Images, // ✅ correct enum
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 1,
+      quality: 0.9,
     });
 
     if (!result.canceled) {
@@ -41,7 +47,6 @@ export default function CreatePostScreen() {
       Alert.alert("Add Photo", "Please add a photo to create a post");
       return;
     }
-
     if (!user || !isAuthenticated) {
       Alert.alert("Error", "You must be logged in to create a post");
       return;
@@ -49,26 +54,22 @@ export default function CreatePostScreen() {
 
     setIsLoading(true);
     try {
-      // For now, use local URI - you can add Firebase Storage later
       await postService.createPost(
         {
           caption: caption.trim(),
-          imageUrl: image,
+          imageUrl: image,            // may be file:// — postService uploads it
           location: location.trim(),
         },
         user
       );
 
-      // Reset and navigate
       setCaption("");
       setImage(null);
       setLocation("");
-      router.replace({
-        pathname: "/(tabs)/feed",
-        params: { refresh: Date.now() }, // Add timestamp to force refresh
-      });
-    } catch (error) {
-      Alert.alert("Error", "Failed to create post");
+
+      router.replace("/(tabs)/feed");
+    } catch (error: any) {
+      Alert.alert("Error", error.message ?? "Failed to create post");
     } finally {
       setIsLoading(false);
     }
@@ -76,27 +77,14 @@ export default function CreatePostScreen() {
 
   return (
     <View style={{ flex: 1, padding: 16, backgroundColor: "white" }}>
-      <Text
-        style={{
-          fontSize: 20,
-          fontWeight: "bold",
-          textAlign: "center",
-          marginBottom: 20,
-        }}
-      >
+      <Text style={{ fontSize: 20, fontWeight: "bold", textAlign: "center", marginBottom: 20 }}>
         Create Post
       </Text>
 
       {/* Image Upload */}
-      <TouchableOpacity
-        onPress={pickImage}
-        style={{ alignItems: "center", marginBottom: 20 }}
-      >
+      <TouchableOpacity onPress={pickImage} style={{ alignItems: "center", marginBottom: 20 }}>
         {image ? (
-          <Image
-            source={{ uri: image }}
-            style={{ width: 200, height: 200, borderRadius: 8 }}
-          />
+          <Image source={{ uri: image }} style={{ width: 200, height: 200, borderRadius: 8 }} />
         ) : (
           <View
             style={{
@@ -109,9 +97,7 @@ export default function CreatePostScreen() {
             }}
           >
             <Ionicons name="camera-outline" size={60} color="#ccc" />
-            <Text style={{ color: "#666", marginTop: 8 }}>
-              Tap to add photo
-            </Text>
+            <Text style={{ color: "#666", marginTop: 8 }}>Tap to add photo</Text>
           </View>
         )}
       </TouchableOpacity>
@@ -161,9 +147,7 @@ export default function CreatePostScreen() {
         {isLoading ? (
           <ActivityIndicator color="white" />
         ) : (
-          <Text style={{ color: "white", fontWeight: "600", fontSize: 16 }}>
-            Share Post
-          </Text>
+          <Text style={{ color: "white", fontWeight: "600", fontSize: 16 }}>Share Post</Text>
         )}
       </TouchableOpacity>
     </View>

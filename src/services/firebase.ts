@@ -1,10 +1,9 @@
+// src/services/firebase.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApps, initializeApp } from 'firebase/app';
-import * as firebaseAuth from 'firebase/auth';
-import { initializeAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-const reactNativePersistence = (firebaseAuth as any).getReactNativePersistence;
-
+import { getReactNativePersistence, initializeAuth } from 'firebase/auth';
+import { deleteField, getFirestore, serverTimestamp } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 import {
   FIREBASE_API_KEY,
@@ -15,7 +14,7 @@ import {
   FIREBASE_STORAGE_BUCKET,
 } from '@env';
 
-// Firebase config
+// Firebase configuration
 const firebaseConfig = {
   apiKey: FIREBASE_API_KEY,
   authDomain: FIREBASE_AUTH_DOMAIN,
@@ -23,7 +22,6 @@ const firebaseConfig = {
   storageBucket: FIREBASE_STORAGE_BUCKET,
   messagingSenderId: FIREBASE_MESSAGING_SENDER_ID,
   appId: FIREBASE_APP_ID,
- 
 };
 
 // Initialize Firebase App once
@@ -35,12 +33,24 @@ let _auth: ReturnType<typeof initializeAuth> | null = null;
 export function getFirebaseAuth() {
   if (!_auth) {
     _auth = initializeAuth(app, {
-      persistence: reactNativePersistence(AsyncStorage),
+      persistence: getReactNativePersistence(AsyncStorage),
     });
   }
   return _auth;
 }
 
-// Firestore instance
+// Firestore
 export const db = getFirestore(app);
-export { app };
+
+// Auth (convenience export)
+export const auth = getFirebaseAuth();
+
+// Storage
+export const storage = getStorage(app);
+
+// Common Firestore helpers re-export
+export { deleteField, serverTimestamp };
+
+// Export the app instance for use elsewhere if needed
+  export { app };
+
