@@ -16,20 +16,22 @@ import {
 export default function EditProfile() {
   const { user, isAuthenticated, updateUserProfile, isLoading } = useAuth();
   const [name, setName] = useState(user?.name ?? "");
-  const [image, setImage] = useState<string | null>(user?.image ?? null);
+  const [newImage, setNewImage] = useState<string | null>(user?.image ?? null);
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images", "videos"],
       allowsEditing: true,
-      aspect: [1, 1], // Square for profile pictures
+      aspect: [1, 1], // Square pic
       quality: 1,
     });
 
     if (!result.canceled) {
-      setImage(result.assets[0].uri);
+      setNewImage(result.assets[0].uri);
     }
   };
+
+  const imageToUse = newImage || user?.image;
 
   const onSave = async () => {
     if (!user || !isAuthenticated) {
@@ -43,7 +45,9 @@ export default function EditProfile() {
     }
 
     try {
-      await updateUserProfile(name.trim(), image as string);
+      
+      await updateUserProfile(name.trim(), imageToUse as string);
+
       Alert.alert("Success", "Profile updated successfully");
       router.navigate({
         pathname: "/(tabs)/profile",
@@ -73,9 +77,9 @@ export default function EditProfile() {
         onPress={pickImage}
         style={{ alignItems: "center", marginBottom: 20 }}
       >
-        {image ? (
+        {imageToUse ? (
           <Image
-            source={{ uri: image }}
+            source={{ uri: imageToUse }}
             style={{ width: 150, height: 150, borderRadius: 75 }}
           />
         ) : (
