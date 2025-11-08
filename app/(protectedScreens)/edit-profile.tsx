@@ -45,7 +45,6 @@ export default function EditProfile() {
     }
 
     try {
-      
       await updateUserProfile(name.trim(), imageToUse as string);
 
       Alert.alert("Success", "Profile updated successfully");
@@ -78,10 +77,27 @@ export default function EditProfile() {
         style={{ alignItems: "center", marginBottom: 20 }}
       >
         {imageToUse ? (
-          <Image
-            source={{ uri: imageToUse }}
-            style={{ width: 150, height: 150, borderRadius: 75 }}
-          />
+          <View style={{ position: "relative" }}>
+            <Image
+              source={{ uri: imageToUse }}
+              style={{ width: 150, height: 150, borderRadius: 75 }}
+            />
+            {/* Edit Icon Overlay */}
+            <View
+              style={{
+                position: "absolute",
+                bottom: 0,
+                right: 0,
+                backgroundColor: "#0095f6",
+                borderRadius: 15,
+                padding: 6,
+                borderWidth: 2,
+                borderColor: "white",
+              }}
+            >
+              <Ionicons name="camera" size={16} color="white" />
+            </View>
+          </View>
         ) : (
           <View
             style={{
