@@ -44,3 +44,6 @@ export function getFirebaseAuth() {
 // Firestore instance
 export const db = getFirestore(app);
 export { app };
+
+// Storage
+//export const storage = getStorage(app);
