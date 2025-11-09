@@ -1,17 +1,16 @@
-
 //libraries
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import {
-    Image,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Image,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
-// custom inports
+// custom imports
 import { useAuth } from '@/src/hooks/useAuth';
 import { Post } from '@/src/types/posts';
 
@@ -23,6 +22,7 @@ interface PostCardProps {
   onToggleComment: (postId: string) => void;
   commentText?: string;
   onCommentTextChange?: (text: string) => void;
+  onUserPress?: (userId: string, username: string) => void;
 }
 
 export const PostCard: React.FC<PostCardProps> = ({
@@ -33,6 +33,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   onToggleComment,
   commentText = '',
   onCommentTextChange = () => {},
+  onUserPress,
 }) => {
   const { user } = useAuth();
 
@@ -53,18 +54,28 @@ export const PostCard: React.FC<PostCardProps> = ({
   const isLiked = user ? post.likes.includes(user.uid) : false;
   const isCommentActive = activeCommentPost === post.id;
 
+  const handleUserPress = () => {
+    if (onUserPress) {
+      onUserPress(post.userId, post.username);
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Post Header */}
       <View style={styles.header}>
-        <Image 
-          source={{ uri: post.userAvatar || 'https://profile.com' }} 
-          style={styles.avatar} 
-        />
-        <View style={styles.userInfo}>
+        <TouchableOpacity onPress={handleUserPress} style={styles.userContainer}>
+          <Image 
+            source={{ uri: post.userAvatar || 'https://via.placeholder.com/40' }} 
+            style={styles.avatar} 
+          />
+        </TouchableOpacity>
+        
+        <TouchableOpacity onPress={handleUserPress} style={styles.userInfo}>
           <Text style={styles.username}>{post.username}</Text>
           {post.location && <Text style={styles.location}>{post.location}</Text>}
-        </View>
+        </TouchableOpacity>
+        
         <Text style={styles.timestamp}>{formatTime(post.createdAt)}</Text>
       </View>
 
@@ -102,13 +113,24 @@ export const PostCard: React.FC<PostCardProps> = ({
 
         {/* Caption */}
         <Text style={styles.caption}>
-          <Text style={styles.captionUsername}>{post.username}</Text> {post.caption}
+          <TouchableOpacity onPress={handleUserPress}>
+            <Text style={styles.captionUsername}>{post.username}</Text>
+          </TouchableOpacity>
+          {` ${post.caption}`}
         </Text>
 
         {/* Comments Preview */}
         {post.comments.slice(0, 2).map(comment => (
           <Text key={comment.id} style={styles.comment}>
-            <Text style={styles.commentUsername}>{comment.username}</Text> {comment.text}
+            <TouchableOpacity onPress={() => {
+              // clickable username in comments
+              if (onUserPress) {
+                onUserPress(comment.userId, comment.username);
+              }
+            }}>
+              <Text style={styles.commentUsername}>{comment.username}</Text>
+            </TouchableOpacity>
+            {` ${comment.text}`}
           </Text>
         ))}
 
@@ -156,11 +178,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 12,
   },
+  userContainer: {
+    marginRight: 8,
+  },
   avatar: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    marginRight: 8,
   },
   userInfo: {
     flex: 1,
@@ -168,6 +192,7 @@ const styles = StyleSheet.create({
   username: {
     fontWeight: '600',
     fontSize: 14,
+    color: '#0095f6',
   },
   location: {
     fontSize: 12,
@@ -201,17 +226,23 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     fontSize: 14,
     lineHeight: 18,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
   },
   captionUsername: {
     fontWeight: '600',
+    color: '#0095f6', // Blue color to indicate it's clickable
   },
   comment: {
     marginBottom: 2,
     fontSize: 14,
     lineHeight: 18,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
   },
   commentUsername: {
     fontWeight: '600',
+    color: '#0095f6', // Blue color to indicate it's clickable
   },
   viewComments: {
     color: '#666',

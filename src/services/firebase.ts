@@ -41,16 +41,7 @@ export function getFirebaseAuth() {
 
 // Firestore
 export const db = getFirestore(app);
-
-// Auth (convenience export)
-export const auth = getFirebaseAuth();
+export { app };
 
 // Storage
-export const storage = getStorage(app);
-
-// Common Firestore helpers re-export
-export { deleteField, serverTimestamp };
-
-// Export the app instance for use elsewhere if needed
-  export { app };
-
+//export const storage = getStorage(app);

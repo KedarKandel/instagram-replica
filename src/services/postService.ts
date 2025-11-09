@@ -1,64 +1,49 @@
-// src/services/postService.ts
-import type { AuthUser } from "@/src/hooks/useAuth";
-import { db, storage } from "@/src/services/firebase";
-import type { Post } from "@/src/types/posts";
+import { db } from "@/src/services/firebase";
+import { Comment, CreatePostData, Post } from "@/src/types/posts";
+import { AuthUser } from "@/src/types/user";
 import {
   addDoc,
   arrayRemove,
   arrayUnion,
   collection,
   doc,
-  increment,
-  limit,
-  onSnapshot,
+  getDoc,
+  getDocs,
   orderBy,
   query,
-  runTransaction,
-  serverTimestamp,
-  setDoc,
+  updateDoc,
+  where,
 } from "firebase/firestore";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
-type FirestorePost = {
-  userId: string;
-  username: string;
-  userAvatar?: string | null;
-  imageUrl: string;
-  caption?: string;
-  location?: string | null;
-  likes?: string[];
-  commentsPreview?: { id: string; username: string; text: string }[];
-  createdAt?: any;
-  updatedAt?: any;
-  commentCount?: number;
-};
+export const postService = {
+  // Create a new post
+  async createPost(postData: CreatePostData, user: AuthUser): Promise<void> {
+    try {
+      // Validate required fields from the AuthUser
+      if (!user.uid) {
+        throw new Error("User UID is undefined");
+      }
 
-function adaptPost(id: string, d: FirestorePost): Post {
-  return {
-    id,
-    userId: d.userId,
-    username: d.username,
-    userAvatar: d.userAvatar ?? undefined,
-    caption: d.caption ?? "",
-    imageUrl: d.imageUrl,
-    location: d.location ?? undefined,
-    likes: Array.isArray(d.likes) ? d.likes : [],
-    comments: Array.isArray(d.commentsPreview) ? d.commentsPreview : [],
-    createdAt: d.createdAt?.toDate ? d.createdAt.toDate() : new Date(),
-    commentCount: typeof d.commentCount === "number" ? d.commentCount : 0,
-  } as Post;
-}
+      if (!user.name) {
+        throw new Error("User name is required");
+      }
 
-async function uploadImageIfNeeded(localOrRemoteUri: string, uid: string) {
-  // If it's already a remote URL, just return it
-  if (!localOrRemoteUri.startsWith("file://")) return localOrRemoteUri;
+      if (!postData.imageUrl) {
+        throw new Error("Image URL is required");
+      }
 
-  const res = await fetch(localOrRemoteUri);
-  const blob = await res.blob();
-  const fileRef = ref(storage, `posts/${uid}-${Date.now()}.jpg`);
-  await uploadBytes(fileRef, blob);
-  return await getDownloadURL(fileRef);
-}
+      // Create the post payload using AuthUser properties
+      const postPayload = {
+        userId: user.uid,
+        username: user.name,
+        userAvatar: user.image || "",
+        caption: postData.caption || "",
+        imageUrl: postData.imageUrl,
+        location: postData.location || "",
+        likes: [],
+        comments: [],
+        createdAt: new Date(),
+      };
 
 export const postService = {
   /** Create a new post (uploads image if it's a local file URI) */
@@ -68,75 +53,167 @@ export const postService = {
   ) {
     const remoteUrl = await uploadImageIfNeeded(data.imageUrl, user.uid);
 
-    const ref = doc(collection(db, "posts"));
-    await setDoc(ref, {
-      userId: user.uid,
-      username: user.name,
-      userAvatar: user.image ?? null,
-      imageUrl: remoteUrl,
-      caption: data.caption,
-      location: data.location || null,
-      likes: [],                // for PostCard
-      commentsPreview: [],      // 2-comment preview for feed
-      commentCount: 0,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
+      if (undefinedFields.length > 0) {
+        throw new Error(
+          `Undefined fields found: ${undefinedFields.join(", ")}`
+        );
+      }
 
-    return ref.id;
+      await addDoc(collection(db, "posts"), postPayload);
+      console.log(" Post created successfully!");
+    } catch (error: any) {
+      console.error(" Post Service Error:", error);
+      console.error(" Error details:", error.message);
+      throw new Error(`Failed to create post: ${error.message}`);
+    }
   },
 
-  /** Feed subscription (newest first) */
-  subscribeFeed(cb: (posts: Post[]) => void) {
-    const q = query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(50));
-    return onSnapshot(q, (snap) => {
-      cb(snap.docs.map((d) => adaptPost(d.id, d.data() as FirestorePost)));
-    });
-  },
+  // Get all posts for feed
+  async getPosts(): Promise<Post[]> {
+    try {
+      const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+      const querySnapshot = await getDocs(q);
 
-  /** Toggle like for current user (uses arrayUnion/arrayRemove to match PostCard) */
-  async toggleLike(postId: string, uid: string) {
-    const ref = doc(db, "posts", postId);
-    await runTransaction(db, async (tx) => {
-      const snap = await tx.get(ref);
-      if (!snap.exists()) throw new Error("Post not found");
-      const data = snap.data() as FirestorePost;
-      const liked = new Set<string>(Array.isArray(data.likes) ? data.likes : []).has(uid);
-
-      tx.update(ref, {
-        likes: liked ? arrayRemove(uid) : arrayUnion(uid),
-        updatedAt: serverTimestamp(),
+      const posts: Post[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        posts.push({
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt.toDate(),
+        } as Post);
       });
-    });
+
+      return posts;
+    } catch (error) {
+      console.error("Error fetching posts:", error);
+      throw new Error("Failed to fetch posts");
+    }
   },
 
-  /** Add a comment; update preview & count */
+  // Like/unlike a post
+  async toggleLike(postId: string, userId: string): Promise<void> {
+    try {
+      const postRef = doc(db, "posts", postId);
+      const postDoc = await getDoc(postRef);
+
+      if (!postDoc.exists()) {
+        throw new Error("Post not found");
+      }
+
+      const post = postDoc.data();
+      const currentLikes: string[] = post.likes || [];
+
+      if (currentLikes.includes(userId)) {
+        // Unlike: remove user ID from likes array
+        await updateDoc(postRef, {
+          likes: arrayRemove(userId),
+        });
+      } else {
+        // Like: add user ID to likes array
+        await updateDoc(postRef, {
+          likes: arrayUnion(userId),
+        });
+      }
+    } catch (error) {
+      console.error("Error toggling like:", error);
+      throw new Error("Failed to toggle like");
+    }
+  },
+
+  // Add comment
   async addComment(
     postId: string,
-    payload: { authorId: string; username: string; text: string }
-  ) {
-    const commentsCol = collection(db, "posts", postId, "comments");
-    const newDoc = await addDoc(commentsCol, {
-      ...payload,
-      createdAt: serverTimestamp(),
-    });
+    text: string,
+    user: AuthUser
+  ): Promise<void> {
+    try {
+      if (!text.trim()) {
+        throw new Error("Comment text cannot be empty");
+      }
 
-    const postRef = doc(db, "posts", postId);
-    await runTransaction(db, async (tx) => {
-      const snap = await tx.get(postRef);
-      if (!snap.exists()) return;
-      const data = snap.data() as FirestorePost;
-      const prev = Array.isArray(data.commentsPreview) ? data.commentsPreview.slice(0, 1) : [];
-      const next = [
-        { id: newDoc.id, username: payload.username, text: payload.text },
-        ...prev,
-      ].slice(0, 2);
+      const postRef = doc(db, "posts", postId);
+      const postDoc = await getDoc(postRef);
 
-      tx.update(postRef, {
-        commentsPreview: next,
-        commentCount: increment(1),
-        updatedAt: serverTimestamp(),
+      if (!postDoc.exists()) {
+        throw new Error("Post not found");
+      }
+
+      const newComment: Comment = {
+        id: `comment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        userId: user.uid,
+        username: user.name,
+        text: text.trim(),
+        createdAt: new Date(),
+      };
+
+      // Add comment to comments array
+      await updateDoc(postRef, {
+        comments: arrayUnion(newComment),
       });
-    });
+    } catch (error) {
+      console.error("Error adding comment:", error);
+      throw new Error("Failed to add comment");
+    }
+  },
+
+  // Get single post by ID
+  async getPostById(postId: string): Promise<Post | null> {
+    try {
+      const postRef = doc(db, "posts", postId);
+      const postDoc = await getDoc(postRef);
+
+      if (postDoc.exists()) {
+        const data = postDoc.data();
+        return {
+          id: postDoc.id,
+          userId: data.userId,
+          username: data.username,
+          userAvatar: data.userAvatar,
+          caption: data.caption,
+          imageUrl: data.imageUrl,
+          location: data.location,
+          likes: data.likes || [],
+          comments: data.comments || [],
+          createdAt: data.createdAt.toDate(),
+        } as Post;
+      }
+      return null;
+    } catch (error) {
+      console.error("Error fetching post:", error);
+      throw new Error("Failed to fetch post");
+    }
+  },
+  // get all posts by a specific user
+  async getPostsByUserId(userId: string): Promise<Post[]> {
+    try {
+      const q = query(
+        collection(db, "posts"),
+        where("userId", "==", userId),
+      );
+      const querySnapshot = await getDocs(q);
+
+      const posts: Post[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        posts.push({
+          id: doc.id,
+          userId: data.userId,
+          username: data.username,
+          userAvatar: data.userAvatar,
+          caption: data.caption,
+          imageUrl: data.imageUrl,
+          location: data.location,
+          likes: data.likes || [],
+          comments: data.comments || [],
+          createdAt: data.createdAt.toDate(),
+        } as Post);
+      });
+
+      return posts;
+    } catch (error) {
+      console.error("Error fetching user posts:", error);
+      throw new Error("Failed to fetch user posts");
+    }
   },
 };

@@ -16,18 +16,7 @@ import {
 import { useEffect, useState } from "react";
 
 import { db, getFirebaseAuth } from "@/src/services/firebase";
-
-// Extended user model
-export interface AuthUser {
-  uid: string;
-  name: string;
-  email: string | null;
-  image?: string | null;
-  followers: string[];
-  following: string[];
-  posts: string[];
-  createdAt?: any;
-}
+import { AuthUser } from "../types/user";
 
 interface UseAuthReturn {
   user: AuthUser | null;

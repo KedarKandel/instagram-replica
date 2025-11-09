@@ -32,6 +32,12 @@ export default function ProtectedLayout() {
           title: 'Post',
         }} 
       />
+        <Stack.Screen 
+        name="user-profile" 
+        options={{ 
+          title: 'User Profile',
+        }} 
+      />
       <Stack.Screen 
         name="contact" 
         options={{ 
