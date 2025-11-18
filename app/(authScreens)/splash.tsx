@@ -11,7 +11,7 @@ export default function SplashScreen() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      // made a custom delay for splash effect
+      // made a custom delay for splash effect 3 sec
       setTimeout(() => {
         if (user) {
           router.replace("/(tabs)/feed");
