@@ -45,13 +45,10 @@ export const postService = {
         createdAt: new Date(),
       };
 
-export const postService = {
-  /** Create a new post (uploads image if it's a local file URI) */
-  async createPost(
-    data: { caption: string; imageUrl: string; location?: string },
-    user: AuthUser
-  ) {
-    const remoteUrl = await uploadImageIfNeeded(data.imageUrl, user.uid);
+      // Validate that no fields are undefined
+      const undefinedFields = Object.entries(postPayload)
+        .filter(([, value]) => value === undefined)
+        .map(([key]) => key);
 
       if (undefinedFields.length > 0) {
         throw new Error(

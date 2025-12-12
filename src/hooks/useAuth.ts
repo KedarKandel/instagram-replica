@@ -51,6 +51,7 @@ export function useAuth(): UseAuthReturn {
     try {
       setIsLoading(true);
       clearError();
+
       const auth = getFirebaseAuth();
 
       const userCredential = await createUserWithEmailAndPassword(
@@ -77,10 +78,23 @@ export function useAuth(): UseAuthReturn {
         posts: [],
         createdAt: serverTimestamp(),
       });
+
+      // ✅ IMPORTANT: immediately update local state
+      setUser({
+        uid: firebaseUser.uid,
+        name: name || firebaseUser.displayName || "",
+        email: firebaseUser.email,
+        image: firebaseUser.photoURL || null,
+        followers: [],
+        following: [],
+        posts: [],
+      });
     } catch (err: any) {
-      const message = getAuthErrorMessage(err.code);
-      setError(message);
-      throw new Error(message);
+      console.error("SIGNUP ERROR:", err);
+
+      const message = getAuthErrorMessage(err?.code || "");
+      setError(`${message} (${err?.code || err?.message})`);
+      throw err;
     } finally {
       setIsLoading(false);
     }
@@ -93,12 +107,15 @@ export function useAuth(): UseAuthReturn {
     try {
       setIsLoading(true);
       clearError();
+
       const auth = getFirebaseAuth();
       await signInWithEmailAndPassword(auth, email, password);
     } catch (err: any) {
-      const message = getAuthErrorMessage(err.code);
-      setError(message);
-      throw new Error(message);
+      console.error("SIGNIN ERROR:", err);
+
+      const message = getAuthErrorMessage(err?.code || "");
+      setError(`${message} (${err?.code || err?.message})`);
+      throw err;
     } finally {
       setIsLoading(false);
     }
@@ -111,13 +128,16 @@ export function useAuth(): UseAuthReturn {
     try {
       setIsLoading(true);
       clearError();
+
       const auth = getFirebaseAuth();
       await signOut(auth);
       setUser(null);
     } catch (err: any) {
-      const message = getAuthErrorMessage(err.code);
-      setError(message);
-      throw new Error(message);
+      console.error("LOGOUT ERROR:", err);
+
+      const message = getAuthErrorMessage(err?.code || "");
+      setError(`${message} (${err?.code || err?.message})`);
+      throw err;
     } finally {
       setIsLoading(false);
     }
@@ -130,12 +150,15 @@ export function useAuth(): UseAuthReturn {
     try {
       setIsLoading(true);
       clearError();
+
       const auth = getFirebaseAuth();
       await sendPasswordResetEmail(auth, email);
     } catch (err: any) {
-      const message = getAuthErrorMessage(err.code);
-      setError(message);
-      throw new Error(message);
+      console.error("RESET PASSWORD ERROR:", err);
+
+      const message = getAuthErrorMessage(err?.code || "");
+      setError(`${message} (${err?.code || err?.message})`);
+      throw err;
     } finally {
       setIsLoading(false);
     }
@@ -149,12 +172,13 @@ export function useAuth(): UseAuthReturn {
     image?: string
   ): Promise<void> => {
     if (!user) throw new Error("No user logged in");
+
     const auth = getFirebaseAuth();
+
     try {
       setIsLoading(true);
       clearError();
 
-      // Update Firebase Auth profile
       if (auth.currentUser) {
         await updateProfile(auth.currentUser, {
           displayName: name,
@@ -162,19 +186,19 @@ export function useAuth(): UseAuthReturn {
         });
       }
 
-      // Update Firestore user doc
       const userRef = doc(db, "users", user.uid);
       await updateDoc(userRef, {
         name,
         image: image || null,
       });
 
-      // Update local state
       setUser({ ...user, name, image });
     } catch (err: any) {
-      const message = getAuthErrorMessage(err.code);
-      setError(message);
-      throw new Error(message);
+      console.error("UPDATE PROFILE ERROR:", err);
+
+      const message = getAuthErrorMessage(err?.code || "");
+      setError(`${message} (${err?.code || err?.message})`);
+      throw err;
     } finally {
       setIsLoading(false);
     }
@@ -185,25 +209,14 @@ export function useAuth(): UseAuthReturn {
   // ---------------------------
   useEffect(() => {
     const auth = getFirebaseAuth();
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         try {
-          // Fetch Firestore profile
           const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+
           if (userDoc.exists()) {
-            const data = userDoc.data() as AuthUser;
-            setUser(data);
-          } else {
-            // fallback if no profile
-            setUser({
-              uid: firebaseUser.uid,
-              name: firebaseUser.displayName || "",
-              email: firebaseUser.email,
-              image: firebaseUser.photoURL || null,
-              followers: [],
-              following: [],
-              posts: [],
-            });
+            setUser(userDoc.data() as AuthUser);
           }
         } catch (err) {
           console.error("Failed to fetch user profile:", err);
@@ -211,6 +224,7 @@ export function useAuth(): UseAuthReturn {
       } else {
         setUser(null);
       }
+
       setIsLoading(false);
     });
 

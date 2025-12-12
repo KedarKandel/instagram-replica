@@ -19,10 +19,6 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <StatusBar style="auto" />
       <Stack screenOptions={{ headerShown: false }}>
-        {/* the index.tsx handle redirects */}
-        <Stack.Screen name="(authScreens)" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="(protectedScreens)" />
       </Stack>
     </GestureHandlerRootView>
   );

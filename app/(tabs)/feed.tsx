@@ -15,10 +15,14 @@ import {
 } from 'react-native';
 
 export default function FeedScreen() {
-  const { user } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [commentText, setCommentText] = useState('');
   const [activeCommentPost, setActiveCommentPost] = useState<string | null>(null);
-  const [commentText, setCommentText] = useState("");
+  
+  const { user } = useAuth();
+  const { refresh } = useLocalSearchParams();
 
   useEffect(() => {
     loadPosts();
@@ -120,14 +124,9 @@ export default function FeedScreen() {
     }
   };
 
-  const onAddComment = async (postId: string, text: string) => {
-    if (!user || !text.trim()) return;
-    await postService.addComment(postId, {
-      authorId: user.uid,
-      username: user.name || "user",
-      text: text.trim(),
-    });
-    setCommentText("");
+  const handleToggleComment = (postId: string) => {
+    setActiveCommentPost(activeCommentPost === postId ? null : postId);
+    setCommentText('');
   };
 
 
@@ -153,17 +152,16 @@ export default function FeedScreen() {
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: '#fafafa' }}>
       <FlatList
         data={posts}
-        keyExtractor={(i) => i.id}
         renderItem={({ item }) => (
           <PostCard
             post={item}
-            onLike={onLike}
-            onAddComment={onAddComment}
+            onLike={handleLike}
+            onAddComment={handleAddComment}
             activeCommentPost={activeCommentPost}
-            onToggleComment={onToggleComment}
+            onToggleComment={handleToggleComment}
             commentText={commentText}
             onCommentTextChange={setCommentText}
             onUserPress={handleUserPress}
